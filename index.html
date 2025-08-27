@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>seesv</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: top;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f4f7f6;
+            color: #333;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 90%;
+            max-width: 700px;
+        }
+        h1 {
+            margin-top: 0;
+            color: #007bff;
+        }
+        input[type="file"] {
+            display: none;
+        }
+        #clickZone {
+            border: 2px dashed #007bff;
+            border-radius: 5px;
+            padding: 40px 20px;
+            cursor: pointer;
+            transition: background-color 0.2s, border-color 0.2s;
+            margin-bottom: 1rem;
+        }
+        #clickZone.drag-over {
+            background-color: #e9f5ff;
+            border-color: #0056b3;
+        }
+        #dropZone {
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+        #dropZone p {
+            margin: 0;
+            color: #555;
+            font-size: 1.1rem;
+        }
+        #dropZone.drag-over {
+            background-color: #e9f5ff;
+        }
+        #fileName {
+            font-style: italic;
+            color: #555;
+            margin-bottom: 1rem;
+        }
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 1rem;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            border: 1px solid #e9ecef;
+        }
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .3s;
+            border-radius: 24px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #007bff;
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        .toggle-label {
+            font-weight: 500;
+            color: #495057;
+        }
+        .output-container {
+            position: relative;
+            margin-top: 1rem;
+        }
+        textarea {
+            width: 100%;
+            height: 250px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            font-family: "Courier New", Courier, monospace;
+            resize: vertical;
+            white-space: nowrap;
+            overflow-x: auto;
+        }
+        .button-container {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 5px;
+        }
+        .output-btn {
+            padding: 8px 12px;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+        #copyButton, #copyFilteredButton {
+            background-color: #28a745;
+        }
+        #copyButton:hover, #copyFilteredButton:hover {
+            background-color: #218838;
+        }
+        #clearButton {
+            background-color: #dc3545;
+        }
+        #clearButton:hover {
+            background-color: #c82333;
+        }
+        #columnSelectionContainer {
+            margin-top: 2rem;
+            text-align: left;
+            border-top: 1px solid #dee2e6;
+            padding-top: 1.5rem;
+        }
+        #checkboxContainer {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 1rem;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        #checkboxContainer label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+        }
+        /* --- Modal Styles --- */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 90%;
+            width: 600px;
+        }
+        .modal-content h2 {
+            margin-top: 0;
+            color: #dc3545;
+        }
+        .modal-buttons {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 25px;
+            gap: 10px;
+        }
+        .modal-buttons button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            flex-grow: 1;
+        }
+        #headerComparison {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: left;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 0.9em;
+            font-weight: bold;
+            white-space: pre;
+            overflow-x: auto;
+        }
+        #modalAppendBtn { background-color: #00c94d; color: white; }
+        #modalRestartBtn { background-color: #006eff; color: white; }
+        #modalCancelBtn { background-color: #6c757d; color: white; }
+    </style>
+</head>
+<body id="dropZone">
+
+    <div class="container">
+        <h1>seesv</h1>
+        
+        <div class="toggle-container">
+            <span class="toggle-label">Replace</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="appendToggle" checked>
+                <span class="slider"></span>
+            </label>
+            <span class="toggle-label">Append</span>
+        </div>
+
+        <div id="clickZone">
+            <p>Click to upload, or drag & drop CSV</p>
+        </div>
+        <input type="file" id="csvFileInput" accept=".csv">
+        <p id="fileName">No file selected</p>
+
+        <div class="output-container">
+            <textarea id="tsvOutput" placeholder="Awaiting CSV..."></textarea>
+            <div class="button-container">
+                <button id="clearButton" class="output-btn" title="Clear Output">Clear</button>
+                <button id="copyButton" class="output-btn" title="Copy to Clipboard">Copy</button>
+            </div>
+        </div>
+
+        <div id="columnSelectionContainer" style="display: none;">
+            <!-- <h2>Select Columns</h2> -->
+            <div id="checkboxContainer"></div>
+            <div class="output-container">
+                <textarea id="filteredTsvOutput" placeholder="Select columns to filter..."></textarea>
+                <div class="button-container">
+                    <button id="copyFilteredButton" class="output-btn" title="Copy Filtered TSV">Copy</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="mismatchModal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Header Mismatch</h2>
+            <div id="headerComparison"></div>
+            <div class="modal-buttons">
+                <button id="modalAppendBtn">Append anyway</button>
+                <button id="modalRestartBtn">Start over</button>
+                <button id="modalCancelBtn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- DOM Elements ---
+        const csvFileInput = document.getElementById('csvFileInput');
+        const tsvOutput = document.getElementById('tsvOutput');
+        const fileNameDisplay = document.getElementById('fileName');
+        const copyButton = document.getElementById('copyButton');
+        const clearButton = document.getElementById('clearButton');
+        const clickZone = document.getElementById('clickZone');
+        const dropZone = document.getElementById('dropZone');
+        const appendToggle = document.getElementById('appendToggle');
+        const columnSelectionContainer = document.getElementById('columnSelectionContainer');
+        const checkboxContainer = document.getElementById('checkboxContainer');
+        const filteredTsvOutput = document.getElementById('filteredTsvOutput');
+        const copyFilteredButton = document.getElementById('copyFilteredButton');
+        const mismatchModal = document.getElementById('mismatchModal');
+        const modalAppendBtn = document.getElementById('modalAppendBtn');
+        const modalRestartBtn = document.getElementById('modalRestartBtn');
+        const modalCancelBtn = document.getElementById('modalCancelBtn');
+        const headerComparisonEl = document.getElementById('headerComparison');
+
+        // --- State Variables ---
+        let parsedData = [];
+        let headers = [];
+        let stagedFile = null;
+
+        // --- Event Listeners ---
+        clickZone.addEventListener('click', () => csvFileInput.click());
+        dropZone.addEventListener('dragover', (e) => { 
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+            clickZone.classList.add('drag-over')
+        });
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('drag-over');
+            clickZone.classList.remove('drag-over');
+        });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            clickZone.classList.remove('drag-over');
+            if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+        });
+        csvFileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) handleFile(e.target.files[0]);
+        });
+        clearButton.addEventListener('click', clearAll);
+        copyButton.addEventListener('click', () => copyToClipboard(tsvOutput, copyButton));
+        copyFilteredButton.addEventListener('click', () => copyToClipboard(filteredTsvOutput, copyFilteredButton));
+        modalAppendBtn.addEventListener('click', handleModalAppend);
+        modalRestartBtn.addEventListener('click', handleModalRestart);
+        modalCancelBtn.addEventListener('click', () => mismatchModal.style.display = 'none');
+
+        // --- Core Functions ---
+        function handleFile(file) {
+            if (!file || !file.name.endsWith('.csv')) {
+                alert('Please select a valid .csv file.');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const fileContent = e.target.result;
+                const { tsvText, newHeaders, newData } = processCsvData(fileContent);
+                const isAppendMode = appendToggle.checked && tsvOutput.value;
+                const headersMatch = JSON.stringify(headers) === JSON.stringify(newHeaders);
+
+                if (isAppendMode && !headersMatch) {
+                    stagedFile = { file, tsvText, newHeaders, newData };
+                    headerComparisonEl.textContent = formatHeaderComparison(headers, newHeaders);
+                    mismatchModal.style.display = 'flex';
+                } else {
+                    processAndDisplay(file, tsvText, newHeaders, newData, isAppendMode);
+                }
+            };
+            reader.readAsText(file);
+        }
+        
+        function processAndDisplay(file, tsvText, newHeaders, newData, isAppend) {
+            if (isAppend) {
+                tsvOutput.value += '\n' + tsvText;
+                fileNameDisplay.textContent = `Appended: ${file.name}`;
+                parsedData.push(...newData);
+            } else {
+                tsvOutput.value = tsvText;
+                fileNameDisplay.textContent = `Processed: ${file.name}`;
+                headers = newHeaders;
+                parsedData = newData;
+                setupColumnCheckboxes();
+            }
+            updateFilteredOutput();
+        }
+
+        function processCsvData(csvText) {
+            const rows = csvText.trim().split('\n');
+            if (rows.length === 0) return { tsvText: '', newHeaders: [], newData: [] };
+            const regex = /,(?=(?:(?:[^"]*"){2})*[^"]*$)/;
+            const newHeaders = rows[0].split(regex).map(cleanCsvField);
+            const newData = [];
+            const tsvRows = [newHeaders.join('\t')];
+            for (let i = 1; i < rows.length; i++) {
+                if (rows[i].trim() === '') continue; // Skip empty rows
+                const columns = rows[i].split(regex).map(cleanCsvField);
+                const rowObject = {};
+                newHeaders.forEach((header, index) => {
+                    rowObject[header] = columns[index];
+                });
+                newData.push(rowObject);
+                tsvRows.push(columns.join('\t'));
+            }
+            return { tsvText: tsvRows.join('\n'), newHeaders, newData };
+        }
+
+        // --- UI and Helper Functions ---
+        function clearAll() {
+            tsvOutput.value = '';
+            filteredTsvOutput.value = '';
+            fileNameDisplay.textContent = 'No file selected';
+            csvFileInput.value = '';
+            columnSelectionContainer.style.display = 'none';
+            checkboxContainer.innerHTML = '';
+            parsedData = [];
+            headers = [];
+        }
+
+        function copyToClipboard(textarea, button) {
+            if (!textarea.value) return alert('Nothing to copy!');
+            navigator.clipboard.writeText(textarea.value).then(() => {
+                const originalText = button.innerHTML;
+                button.innerHTML = 'Copied!';
+                setTimeout(() => { button.innerHTML = 'Copy'; }, 2000);
+            }).catch(err => console.error('Failed to copy text: ', err));
+        }
+
+        function cleanCsvField(field) {
+            let clean = field ? field.trim() : '';
+            if (clean.startsWith('"') && clean.endsWith('"')) {
+                clean = clean.substring(1, clean.length - 1);
+            }
+            return clean.replace(/""/g, '"');
+        }
+
+        function setupColumnCheckboxes() {
+            checkboxContainer.innerHTML = '';
+            columnSelectionContainer.style.display = headers.length > 0 ? 'block' : 'none';
+            if (headers.length === 0) return;
+            const defaultSelectedHeaders = ["Device Serial Number", "Asset Number", "IMEI1"];
+            headers.forEach(header => {
+                const label = document.createElement('label');
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.value = header;
+                checkbox.checked = defaultSelectedHeaders.includes(header);
+                checkbox.addEventListener('change', updateFilteredOutput);
+                label.appendChild(checkbox);
+                label.appendChild(document.createTextNode(header));
+                checkboxContainer.appendChild(label);
+            });
+        }
+
+        function updateFilteredOutput() {
+            const selectedHeaders = Array.from(checkboxContainer.querySelectorAll('input:checked')).map(cb => cb.value);
+            if (selectedHeaders.length === 0 || parsedData.length === 0) {
+                filteredTsvOutput.value = '';
+                return;
+            }
+            const headerRow = selectedHeaders.join('\t');
+            const dataRows = parsedData.map(row => selectedHeaders.map(header => row[header] || '').join('\t'));
+            filteredTsvOutput.value = [headerRow, ...dataRows].join('\n');
+        }
+
+        function formatHeaderComparison(oldHeaders, newHeaders) {
+            const numCols = Math.max(oldHeaders.length, newHeaders.length);
+            const colWidths = [];
+
+            for (let i = 0; i < numCols; i++) {
+                const oldH = oldHeaders[i] || '';
+                const newH = newHeaders[i] || '';
+                colWidths[i] = Math.max(oldH.length, newH.length);
+            }
+
+            let oldHeaderStr = 'Existing: ';
+            let newHeaderStr = 'New     : ';
+
+            for (let i = 0; i < numCols; i++) {
+                const oldPadded = (oldHeaders[i] || '').padEnd(colWidths[i]);
+                const newPadded = (newHeaders[i] || '').padEnd(colWidths[i]);
+                oldHeaderStr += oldPadded + ' | ';
+                newHeaderStr += newPadded + ' | ';
+            }
+
+            return `${oldHeaderStr.slice(0, -3)}\n${newHeaderStr.slice(0, -3)}`;
+        }
+
+        // --- Modal Action Handlers ---
+        function handleModalAppend() {
+            const { file, tsvText, newHeaders, newData } = stagedFile;
+            processAndDisplay(file, tsvText, newHeaders, newData, true);
+            mismatchModal.style.display = 'none';
+        }
+
+        function handleModalRestart() {
+            const { file, tsvText, newHeaders, newData } = stagedFile;
+            clearAll();
+            processAndDisplay(file, tsvText, newHeaders, newData, false);
+            mismatchModal.style.display = 'none';
+        }
+    </script>
+</body>
+</html>
